@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#100b1c">
+<title>Chop or Be Chopped 💀</title>
+<style>
+  :root {
+    --pink: #ff4f9a;
+    --purple: #a855f7;
+    --muted: #cbbddd;
+    --panel: rgba(29, 17, 48, .94);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 1px 0 28px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(125,54,173,.28), transparent 48%), #100b1c;
+    color: #fff; font-family: Arial, Helvetica, sans-serif; text-align: center;
+    user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  h1 {
+    margin: 22px 12px 4px; color: var(--pink); font-size: clamp(25px,6vw,34px);
+    line-height: 1.15; text-shadow: 0 0 18px rgba(255,79,154,.28);
+  }
+  .subtitle { margin: 8px 12px 10px; color: #d5c9e8; font-size: 14px; }
+  .creator {
+    display: inline-block; margin: 0 auto 12px; padding: 7px 13px;
+    border: 1px solid rgba(255,79,154,.45); border-radius: 999px;
+    background: rgba(255,79,154,.08); color: #ffc0dc; font-size: 11px;
+    font-weight: 900; letter-spacing: 2px;
+  }
+  .score-row { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 0 auto 9px; padding: 0 10px; }
+  .score-card {
+    min-width: 108px; padding: 7px 14px; border: 1px solid rgba(168,85,247,.5);
+    border-radius: 12px; background: var(--panel); box-shadow: 0 5px 18px rgba(0,0,0,.18);
+  }
+  .score-label { display: block; margin-bottom: 2px; color: #c7a8ef; font-size: 9px; font-weight: 800; letter-spacing: 1.7px; }
+  #score, #best { color: #f9a8d4; font-size: 21px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  /* Bigger arena: wide on desktop, still responsive on phones. */
+  .game-shell { width: min(96vw, 720px); margin: 0 auto; }
+  #hud { display: flex; justify-content: space-between; align-items: end; gap: 8px; width: 100%; min-height: 43px; margin: 0 auto 7px; padding: 0 3px; }
+  .hud-group { flex: 1 1 50%; min-width: 0; }
+  .hud-group.health { text-align: right; }
+  .hud-label { display: block; margin-bottom: 4px; color: #cbbddd; font-size: 9px; font-weight: 900; letter-spacing: 1.2px; }
+  .hud-icons { display: flex; align-items: center; gap: 0; white-space: nowrap; width: 100%; }
+  .hud-group.health .hud-icons { justify-content: flex-end; }
+  .hud-icon { flex: 1 1 0; min-width: 0; text-align: center; font-size: clamp(10px,2.8vw,16px); line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.65)); }
+  .hud-icon.empty { filter: grayscale(1); opacity: .24; }
+  .health-icons { display: flex; justify-content: flex-end; align-items: center; width: 100%; }
+  .gold-icons { display: flex; flex: 0 0 28px; width: 28px; }
+  .gold-icons .hud-icon { flex: 1 1 50%; }
+  .red-icons { display: flex; flex: 1 1 auto; min-width: 0; }
+  #game {
+    position: relative; width: 100%; height: clamp(520px, 78vh, 820px); max-height: none; min-height: 520px;
+    overflow: hidden; isolation: isolate; border: 3px solid var(--purple); border-radius: 16px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(101,55,153,.42), transparent 48%),
+                linear-gradient(180deg,#211339 0%,#100b20 62%,#080711 100%);
+    box-shadow: 0 0 24px rgba(168,85,247,.2), inset 0 0 28px rgba(0,0,0,.3);
+    touch-action: none;
+  }
+  #game::before {
+    content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; opacity: .65;
+    background-image: radial-gradient(2px 2px at 15% 13%,#fff 45%,transparent 60%),
+      radial-gradient(1px 1px at 77% 18%,#f5d5ff 45%,transparent 60%),
+      radial-gradient(2px 2px at 62% 33%,#fff 45%,transparent 60%),
+      radial-gradient(1px 1px at 28% 42%,#f5d5ff 45%,transparent 60%),
+      radial-gradient(1px 1px at 88% 57%,#fff 45%,transparent 60%),
+      radial-gradient(2px 2px at 11% 72%,#f5d5ff 45%,transparent 60%),
+      radial-gradient(1px 1px at 69% 82%,#fff 45%,transparent 60%);
+  }
+  #game::after {
+    content: ""; position: absolute; z-index: 0; right: 0; bottom: 0; left: 0; height: 24px;
+    border-top: 1px solid rgba(168,85,247,.25);
+    background: linear-gradient(180deg,rgba(168,85,247,.09),rgba(0,0,0,.32)); pointer-events: none;
+  }
+  #player {
+    position: absolute; z-index: 4; bottom: 18px; left: 180px; width: 48px; height: 54px;
+    display: flex; align-items: center; justify-content: flex-start; line-height: 1;
+    will-change: left; font-size: 36px;
+  }
+  #playerCharacter { position: relative; z-index: 2; display: inline-block; }
+  #swordInHand {
+    position: absolute; z-index: 3; display: none; right: -15px; bottom: 8px;
+    font-size: 27px; transform: rotate(-34deg); transform-origin: 50% 80%;
+    filter: drop-shadow(0 0 5px rgba(110,220,255,.85));
+  }
+  #player.has-sword #swordInHand { display: inline-block; animation: swordGlow 1.1s ease-in-out infinite alternate; }
+  .falling-item {
+    position: absolute; z-index: 2; display: grid; place-items: center; width: 34px; height: 36px;
+    font-size: 29px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); pointer-events: none;
+  }
+  .food { filter: drop-shadow(0 0 7px rgba(140,255,174,.35)); }
+  .mango { filter: drop-shadow(0 0 8px rgba(255,162,80,.5)); }
+  .normal-apple { filter: drop-shadow(0 0 7px rgba(255,90,110,.4)); }
+  .golden-apple { filter: sepia(1) saturate(4) hue-rotate(350deg) drop-shadow(0 0 8px rgba(255,211,66,.95)); animation: goldenPulse .75s ease-in-out infinite alternate; }
+  /* Every mystery potion uses exactly the same look: its effect stays hidden. */
+  .potion { border-radius: 12px; font-size: 28px; filter: hue-rotate(285deg) saturate(1.7) drop-shadow(0 0 9px rgba(255,100,190,.9)); }
+  .rare-sword { font-size: 30px; filter: drop-shadow(0 0 5px rgba(190,150,255,.95)) drop-shadow(0 0 11px rgba(255,210,95,.85)); animation: swordDropPulse .7s ease-in-out infinite alternate; }
+  .enemy-sword { filter: drop-shadow(0 0 5px rgba(210,210,255,.45)); }
+  .gold-icons:empty { display: none; }
+  .overlay {
+    position: absolute; z-index: 8; inset: 0; display: grid; place-items: center; padding: 24px;
+    background: rgba(9,5,17,.69); backdrop-filter: blur(3px);
+  }
+  .overlay.hidden { display: none; }
+  .overlay-card {
+    width: 100%; max-width: 300px; padding: 22px 18px; border: 1px solid rgba(207,156,255,.6);
+    border-radius: 16px; background: rgba(29,17,48,.95); box-shadow: 0 0 24px rgba(168,85,247,.18);
+  }
+  #overlayTitle { margin: 0 0 9px; color: #ff8cc0; font-size: 22px; }
+  #overlayText { margin: 0; color: #e1d5ef; font-size: 13px; line-height: 1.55; }
+  #toast {
+    position: absolute; z-index: 7; top: 16px; left: 50%; width: max-content; max-width: calc(100% - 24px);
+    padding: 10px 14px; border: 1px solid rgba(255,191,233,.8); border-radius: 12px;
+    background: rgba(37,15,54,.95); color: #fff1fb; font-weight: 900; font-size: 12px;
+    line-height: 1.35; opacity: 0; pointer-events: none; transform: translate(-50%,-12px) scale(.94);
+    box-shadow: 0 0 22px rgba(255,79,154,.2); text-wrap: balance;
+  }
+  #toast.visible { animation: toastIn 2.55s ease both; }
+  #toast.good { border-color: #7bf6ce; box-shadow: 0 0 22px rgba(123,246,206,.25); }
+  #toast.bad { border-color: #ff637f; box-shadow: 0 0 22px rgba(255,65,95,.25); }
+  #toast.legendary { border-color: #ffe278; color: #fff2af; box-shadow: 0 0 26px rgba(255,211,66,.35); }
+  #message { min-height: 24px; margin: 12px 8px 9px; color: #f9a8d4; font-size: 14px; font-weight: 900; letter-spacing: .2px; }
+  .action-row, .controls { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; }
+  button {
+    border: 0; border-radius: 12px; padding: 12px 17px; margin: 3px;
+    background: linear-gradient(135deg,#d946ef,#9333ea); color: #fff; font-weight: 900; font-size: 14px;
+    cursor: pointer; box-shadow: 0 5px 0 #5b2188, 0 8px 18px rgba(0,0,0,.2);
+    transition: transform .08s ease,filter .15s ease; touch-action: manipulation;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:active { transform: translateY(3px); box-shadow: 0 2px 0 #5b2188; }
+  #soundBtn, #slashBtn { border: 1px solid rgba(192,132,252,.6); background: #2b1a43; box-shadow: 0 4px 0 #160d24; }
+  #slashBtn:disabled { cursor: not-allowed; opacity: .45; filter: grayscale(.4); }
+  .controls { gap: 24px; margin: 13px auto 0; }
+  .controls button { min-width: 82px; padding: 13px 18px; font-size: 25px; touch-action: none; }
+  #swordStatus {
+    width: fit-content; max-width: 92%; margin: 11px auto 0; padding: 8px 12px;
+    border: 1px solid rgba(110,220,255,.55); border-radius: 10px;
+    background: rgba(29,55,77,.45); color: #d5f5ff; font-size: 12px; font-weight: 900;
+  }
+  #swordStatus.hidden { display: none; }
+  .damage-note { color: #ffb2d5; }
+  .instructions-modal {
+    position: fixed; z-index: 100; inset: 0; display: none; place-items: center;
+    padding: 18px; background: rgba(7, 4, 14, .82); backdrop-filter: blur(7px);
+  }
+  .instructions-modal.open { display: grid; }
+  .instructions-card {
+    width: min(100%, 620px); max-height: min(88vh, 800px); overflow-y: auto;
+    padding: clamp(18px, 4vw, 28px); border: 1px solid rgba(207,156,255,.7);
+    border-radius: 20px; text-align: left; background:
+      radial-gradient(ellipse at top right, rgba(168,85,247,.2), transparent 48%),
+      rgba(29,17,48,.98); box-shadow: 0 0 45px rgba(168,85,247,.28);
+  }
+  .instructions-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  #instructionsTitle { margin: 0; color: #ff8cc0; font-size: clamp(20px, 4vw, 27px); }
+  #closeInstructionsBtn { flex-shrink: 0; padding: 9px 12px; font-size: 12px; }
+  .instructions-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; margin-top: 18px; }
+  .instruction-item {
+    padding: 13px; border: 1px solid rgba(168,85,247,.3); border-radius: 13px;
+    background: rgba(12,8,23,.55); color: var(--muted); font-size: 13px; line-height: 1.55;
+  }
+  .instruction-item strong { display: block; margin-bottom: 5px; color: #f4d3ff; font-size: 14px; }
+  .instruction-footnote { margin: 15px 2px 0; color: #cbbddd; font-size: 12px; line-height: 1.6; }
+  @media (max-width: 520px) {
+    .instructions-grid { grid-template-columns: 1fr; gap: 8px; }
+    .instructions-card { max-height: 90vh; }
+    #game { height: clamp(520px, 72vh, 720px); }
+  }
+  .hit-flash { animation: hitShake .18s linear; }
+  .invulnerable #playerCharacter { animation: blink .13s steps(2,start) infinite; }
+  .slash-ring {
+    position: absolute; z-index: 5; width: 150px; height: 150px; border: 5px solid rgba(148,231,255,.9);
+    border-radius: 50%; pointer-events: none; box-shadow: 0 0 15px #67dcff, inset 0 0 20px rgba(130,230,255,.6);
+    animation: slashWave .36s ease-out forwards;
+  }
+  .chop-burst { position: absolute; z-index: 6; width: 34px; height: 36px; display: grid; place-items: center; pointer-events: none; font-size: 25px; animation: chopped .34s ease-out forwards; }
+  .spark { position: absolute; z-index: 5; pointer-events: none; color: #baf3ff; font-size: 16px; animation: sparkFly .38s ease-out forwards; }
+  @keyframes blink { to { opacity: .3; } }
+  @keyframes hitShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  @keyframes toastIn { 0% { opacity: 0; transform: translate(-50%,-12px) scale(.94); } 12%,78% { opacity: 1; transform: translate(-50%,0) scale(1); } 100% { opacity: 0; transform: translate(-50%,-8px) scale(.98); } }
+  @keyframes goldenPulse { from { transform: scale(.96); } to { transform: scale(1.12); } }
+  @keyframes swordDropPulse { from { transform: scale(.92) rotate(-5deg); } to { transform: scale(1.12) rotate(5deg); } }
+  @keyframes swordGlow { from { filter: drop-shadow(0 0 3px #64dfff); } to { filter: drop-shadow(0 0 9px #fff18a); } }
+  @keyframes slashWave { from { opacity: .95; transform: translate(-50%,-50%) scale(.25) rotate(-20deg); } to { opacity: 0; transform: translate(-50%,-50%) scale(1.25) rotate(45deg); } }
+  @keyframes chopped { 0% { opacity: 1; transform: scale(1) rotate(0); } 100% { opacity: 0; transform: scale(1.8) rotate(120deg); } }
+  @keyframes sparkFly { from { opacity: 1; transform: translate(0,0) scale(1); } to { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(.2); } }
+  @media (max-width: 360px) {
+    .hud-label { font-size: 8px; letter-spacing: .8px; }
+    .hud-icon { font-size: 10px; }
+    .gold-icons { flex-basis: 23px; width: 23px; }
+    .score-card { min-width: 98px; }
+    .instructions { font-size: 11px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,*::before,*::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <h1>🔪 CHOP OR BE CHOPPED 💀</h1>
+  <p class="subtitle">Dodge the blades. Collect apples and cute mangoes. Grab the legendary loot!</p>
+  <div class="creator">MADE BY BHAVYA MISHRA</div>
+
+  <div class="score-row" aria-label="Game scores">
+    <div class="score-card"><span class="score-label">YOUR SCORE</span><span id="score">00</span></div>
+    <div class="score-card"><span class="score-label">BEST SCORE</span><span id="best">00</span></div>
+  </div>
+
+  <main class="game-shell">
+    <div id="hud" aria-label="Player status">
+      <div class="hud-group hunger">
+        <span class="hud-label">HUNGER</span>
+        <div id="hungerIcons" class="hud-icons" aria-label="10 hunger points"></div>
+      </div>
+      <div class="hud-group health">
+        <span class="hud-label">HEALTH + GOLD HEARTS</span>
+        <div class="health-icons hud-icons">
+          <div id="goldIcons" class="gold-icons" aria-label="Golden hearts"></div>
+          <div id="heartIcons" class="red-icons" aria-label="Normal hearts"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="game" aria-label="Chop or Be Chopped game area">
+      <div id="player"><span id="playerCharacter">🥷</span><span id="swordInHand">⚔️</span></div>
+      <div id="toast" role="status" aria-live="polite"></div>
+      <div id="overlay" class="overlay">
+        <div class="overlay-card">
+          <h2 id="overlayTitle">READY, VICTIM? 💀</h2>
+          <p id="overlayText">Dodge dangerous knives, axes, and enemy blades. Collect apples and cute mangoes, watch for golden hearts, and try the mystery potion. The rare ⚔️ item is safe to collect!</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="message" role="status" aria-live="polite">Ready when you are. 😈</div>
+  <div class="action-row">
+    <button id="startBtn" type="button">START GAME</button>
+    <button id="soundBtn" type="button" aria-pressed="true">🔊 SOUND ON</button>
+    <button id="slashBtn" type="button" disabled>⚔️ SLASH</button>
+    <button id="instructionsBtn" type="button" aria-haspopup="dialog" aria-controls="instructionsModal">📖 HOW TO PLAY</button>
+  </div>
+  <div id="swordStatus" class="hidden">⚔️ OBLITERATOR · 5/5 DURABILITY</div>
+  <div class="controls" aria-label="Touch movement controls">
+    <button id="leftBtn" type="button" aria-label="Move left">⬅️</button>
+    <button id="rightBtn" type="button" aria-label="Move right">➡️</button>
+  </div>
+
+  <section id="instructionsModal" class="instructions-modal" role="dialog" aria-modal="true" aria-labelledby="instructionsTitle" aria-hidden="true">
+    <div class="instructions-card">
+      <div class="instructions-header">
+        <h2 id="instructionsTitle">📖 HOW TO PLAY</h2>
+        <button id="closeInstructionsBtn" type="button">✕ CLOSE</button>
+      </div>
+      <div class="instructions-grid">
+        <div class="instruction-item"><strong>🎮 MOVE</strong>Use ← / → or A / D. On phones or tablets, hold the arrow buttons. Moving drains hunger, and empty hunger slows you down.</div>
+        <div class="instruction-item"><strong>❤️ STAY ALIVE</strong>A 🔪 knife or 🗡️ enemy sword removes 1 heart. An 🪓 axe removes 2 hearts. At zero normal hearts, the game ends.</div>
+        <div class="instruction-item"><strong>🍎 FOOD & GOLDEN APPLES</strong>Regular apples and cute 🥭 mangoes restore hunger. A ✨ golden apple grants 2 temporary golden hearts; they disappear as damage consumes them.</div>
+        <div class="instruction-item"><strong>🧪 MYSTERY POTION</strong>All potions look the same. Each one randomly restores up to 3 normal hearts OR deals 3 hearts of damage.</div>
+        <div class="instruction-item"><strong>⚔️ RARE OBLITERATOR</strong>The glowing crossed-swords pickup is safe but rare. Collect it to get the Obliterator for 5 swings. Picking up another refreshes its durability.</div>
+        <div class="instruction-item"><strong>💥 SLASH & SCORE</strong>With the sword, press RIGHT CTRL or tap SLASH. Nearby axes and enemy swords get chopped. Earn 10 points for each chopped target; the sword breaks after 5 swings.</div>
+      </div>
+      <p class="instruction-footnote">Every item falls inside the arena. Keep moving, collect the useful drops, and watch out for hazards. Sound can be switched off at any time.</p>
+    </div>
+  </section>
+
+<script>
+(() => {
+  "use strict";
+
+  const game = document.getElementById("game");
+  const player = document.getElementById("player");
+  const playerCharacter = document.getElementById("playerCharacter");
+  const swordInHand = document.getElementById("swordInHand");
+  const scoreText = document.getElementById("score");
+  const bestText = document.getElementById("best");
+  const hungerIcons = document.getElementById("hungerIcons");
+  const heartIcons = document.getElementById("heartIcons");
+  const goldIcons = document.getElementById("goldIcons");
+  const message = document.getElementById("message");
+  const startBtn = document.getElementById("startBtn");
+  const soundBtn = document.getElementById("soundBtn");
+  const slashBtn = document.getElementById("slashBtn");
+  const swordStatus = document.getElementById("swordStatus");
+  const overlay = document.getElementById("overlay");
+  const overlayTitle = document.getElementById("overlayTitle");
+  const overlayText = document.getElementById("overlayText");
+  const toast = document.getElementById("toast");
+  const instructionsBtn = document.getElementById("instructionsBtn");
+  const instructionsModal = document.getElementById("instructionsModal");
+  const closeInstructionsBtn = document.getElementById("closeInstructionsBtn");
+
+  const MAX_HEARTS = 10;
+  const MAX_HUNGER = 10;
+  const MAX_GOLD_HEARTS = 2;
+  const PLAYER_BOTTOM_GAP = 18;
+  const HUNGER_DRAIN_SECONDS = 1.25;
+  const SLASH_RANGE = 130; // About five game blocks in this arena.
+  const SWORD_MAX_DURABILITY = 5;
+
+  let x = 0;
+  let score = 0;
+  let hearts = MAX_HEARTS;
+  let goldHearts = 0;
+  let hunger = MAX_HUNGER;
+  let running = false;
+  let instructionsOpen = false;
+  let lastFocusedElement = null;
+  let blades = [];
+  let foods = [];
+  let potions = [];
+  let swordDrops = [];
+  let bladeTimer = null;
+  let foodTimer = null;
+  let goldenAppleTimer = null;
+  let potionTimer = null;
+  let swordTimer = null;
+  let frame = 0;
+  let keys = {};
+  let lastFrame = 0;
+  let hungerDrainTimer = 0;
+  let invulnerableUntil = 0;
+  let soundOn = true;
+  let audioContext = null;
+  let bestScore = 0;
+  let hasSword = false;
+  let swordDurability = 0;
+  let toastTimer = null;
+  let lastSlashAt = 0;
+
+  try {
+    bestScore = Number(localStorage.getItem("chopOrBeChoppedBest") || 0) || 0;
+  } catch (error) { bestScore = 0; }
+  bestText.textContent = String(bestScore).padStart(2, "0");
+
+  function makeIcons(container, symbol, count) {
+    container.replaceChildren();
+    for (let i = 0; i < count; i++) {
+      const icon = document.createElement("span");
+      icon.className = "hud-icon";
+      icon.textContent = symbol;
+      icon.setAttribute("aria-hidden", "true");
+      container.appendChild(icon);
+    }
+  }
+
+  makeIcons(hungerIcons, "🥭", MAX_HUNGER);
+  makeIcons(heartIcons, "❤️", MAX_HEARTS);
+  // Golden hearts are created only while they exist, so depleted ones vanish.
+
+  function paintIcons(container, amount, fullSymbol, emptySymbol) {
+    Array.from(container.children).forEach((icon, index) => {
+      const active = index < amount;
+      icon.textContent = active ? fullSymbol : emptySymbol;
+      icon.classList.toggle("empty", !active);
+    });
+  }
+
+  function updateHUD() {
+    paintIcons(hungerIcons, hunger, "🥭", "🥭");
+    paintIcons(heartIcons, hearts, "❤️", "🖤");
+
+    // Render only the golden hearts that are still active. At zero, the row vanishes.
+    goldIcons.replaceChildren();
+    for (let i = 0; i < goldHearts; i++) {
+      const icon = document.createElement("span");
+      icon.className = "hud-icon";
+      icon.textContent = "💛";
+      icon.setAttribute("aria-hidden", "true");
+      goldIcons.appendChild(icon);
+    }
+    goldIcons.style.display = goldHearts > 0 ? "flex" : "none";
+    hungerIcons.parentElement.setAttribute("aria-label", `${hunger} of ${MAX_HUNGER} hunger points`);
+    heartIcons.parentElement.setAttribute("aria-label", `${hearts} normal hearts`);
+    goldIcons.setAttribute("aria-label", `${goldHearts} golden hearts remaining`);
+  }
+
+  function updateScore() {
+    scoreText.textContent = String(score).padStart(2, "0");
+    if (score > bestScore) {
+      bestScore = score;
+      bestText.textContent = String(bestScore).padStart(2, "0");
+      try { localStorage.setItem("chopOrBeChoppedBest", String(bestScore)); } catch (error) { /* Storage is optional. */ }
+    }
+  }
+
+  function syncSwordUI() {
+    player.classList.toggle("has-sword", hasSword && swordDurability > 0);
+    slashBtn.disabled = !running || !hasSword || swordDurability <= 0;
+    if (hasSword && swordDurability > 0) {
+      swordStatus.textContent = `⚔️ OBLITERATOR · ${swordDurability}/${SWORD_MAX_DURABILITY} DURABILITY`;
+      swordStatus.classList.remove("hidden");
+    } else {
+      swordStatus.classList.add("hidden");
+    }
+  }
+
+  function getAudio() {
+    if (!soundOn) return null;
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return null;
+    if (!audioContext) audioContext = new AudioCtor();
+    if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+    return audioContext;
+  }
+
+  function tone(frequency, duration, wave = "sine", volume = .055, delay = 0, endFrequency = null) {
+    const audio = getAudio();
+    if (!audio) return;
+    const startAt = audio.currentTime + delay;
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    oscillator.type = wave;
+    oscillator.frequency.setValueAtTime(frequency, startAt);
+    if (endFrequency !== null) {
+      oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), startAt + duration);
+    }
+    gain.gain.setValueAtTime(volume, startAt);
+    gain.gain.exponentialRampToValueAtTime(.001, startAt + duration);
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + duration);
+  }
+
+  function playSound(type) {
+    if (!soundOn) return;
+    if (type === "start") {
+      tone(440,.12,"triangle",.045,0); tone(660,.16,"triangle",.05,.1);
+    } else if (type === "knife") {
+      tone(300,.12,"sawtooth",.07,0,115); tone(170,.16,"square",.045,.07,75);
+    } else if (type === "axe") {
+      tone(125,.22,"sawtooth",.09,0,48); tone(78,.24,"square",.065,.08,38);
+    } else if (type === "swordHit") {
+      tone(390,.13,"sawtooth",.065,0,125); tone(185,.16,"square",.045,.06,70);
+    } else if (type === "food") {
+      tone(520,.1,"triangle",.05,0); tone(680,.12,"triangle",.05,.09); tone(850,.15,"triangle",.045,.18);
+    } else if (type === "golden") {
+      tone(660,.11,"triangle",.06,0); tone(880,.14,"triangle",.065,.09); tone(1120,.2,"sine",.05,.2);
+    } else if (type === "potionDamage") {
+      tone(210,.2,"sawtooth",.09,0,90); tone(135,.25,"square",.065,.12,45); tone(95,.18,"sawtooth",.05,.25,35);
+    } else if (type === "potionHeal") {
+      tone(520,.11,"sine",.055,0,720); tone(740,.13,"triangle",.06,.09,980); tone(990,.2,"sine",.05,.19,1320);
+    } else if (type === "swordGet") {
+      tone(440,.12,"triangle",.05,0); tone(660,.15,"triangle",.06,.09); tone(990,.25,"sine",.06,.19);
+    } else if (type === "slash") {
+      tone(760,.11,"sawtooth",.045,0,210); tone(1180,.08,"triangle",.04,.04,550);
+    } else if (type === "chop") {
+      tone(220,.10,"square",.045,0,110); tone(440,.08,"triangle",.035,.04,220);
+    } else if (type === "break") {
+      tone(480,.12,"triangle",.055,0,250); tone(190,.22,"square",.05,.11,55);
+    } else if (type === "gameover") {
+      tone(360,.2,"triangle",.06,0,250); tone(245,.24,"triangle",.06,.18,150); tone(150,.34,"sawtooth",.055,.38,55);
+    } else if (type === "button") {
+      tone(420,.07,"sine",.035,0,520);
+    }
+  }
+
+  function showToast(text, kind = "good") {
+    clearTimeout(toastTimer);
+    toast.className = "";
+    toast.textContent = text;
+    void toast.offsetWidth;
+    toast.className = `visible ${kind}`;
+    toastTimer = setTimeout(() => { toast.className = ""; }, 2600);
+  }
+
+  function clearTimers() {
+    clearInterval(bladeTimer);
+    clearInterval(foodTimer);
+    clearInterval(goldenAppleTimer);
+    clearInterval(potionTimer);
+    clearInterval(swordTimer);
+    bladeTimer = foodTimer = goldenAppleTimer = potionTimer = swordTimer = null;
+    clearTimeout(toastTimer);
+  }
+
+  function clearFallingItems() {
+    game.querySelectorAll(".falling-item, .slash-ring, .chop-burst, .spark").forEach(item => item.remove());
+    blades = [];
+    foods = [];
+    potions = [];
+    swordDrops = [];
+    toast.className = "";
+    toast.textContent = "";
+  }
+
+  function randomX(width = 34) {
+    return Math.random() * Math.max(1, game.clientWidth - width);
+  }
+
+  function makeFallingItem({ emoji, className, x: itemX = randomX(), speed, kind, width = 34, height = 36, ...extra }) {
+    const el = document.createElement("div");
+    el.className = `falling-item ${className || ""}`.trim();
+    el.textContent = emoji;
+    el.setAttribute("aria-hidden", "true");
+    el.style.left = `${itemX}px`;
+    el.style.top = `-42px`;
+    game.appendChild(el);
+    return { el, x: itemX, y: -42, width, height, speed, kind, ...extra };
+  }
+
+  function spawnBlade() {
+    if (!running || instructionsOpen) return;
+    const roll = Math.random();
+    const type = roll < .42 ? "axe" : roll < .72 ? "knife" : "sword";
+    // 🗡️ is a dangerous enemy blade. ⚔️ is reserved for the safe, rare collectible.
+    const emoji = type === "axe" ? "🪓" : type === "knife" ? "🔪" : "🗡️";
+    const blade = makeFallingItem({
+      emoji, className: `hazard hazard-${type}`, speed: 170 + Math.random() * 80 + Math.min(score * 1.2, 110),
+      kind: "hazard", type, damage: type === "axe" ? 2 : 1
+    });
+    blades.push(blade);
+  }
+
+  // About 10 regular food drops every 20 seconds (one every 2 seconds).
+  // Regular food randomly alternates between apples and cute mangoes.
+  function spawnNormalFood() {
+    if (!running || instructionsOpen || foods.length >= 5) return;
+    const isApple = Math.random() < .5;
+    const food = makeFallingItem({
+      emoji: isApple ? "🍎" : "🥭",
+      className: `food ${isApple ? "normal-apple" : "mango"}`,
+      speed: 118 + Math.random() * 36,
+      kind: isApple ? "apple" : "mango",
+      restore: 3
+    });
+    foods.push(food);
+  }
+
+  // About 2 rare golden apples every 20 seconds (one every 10 seconds).
+  function spawnGoldenApple() {
+    if (!running || instructionsOpen || foods.length >= 5) return;
+    const apple = makeFallingItem({ emoji: "🍎", className: "food golden-apple", speed: 105 + Math.random() * 25, kind: "goldenApple", restore: 2 });
+    foods.push(apple);
+  }
+
+  function spawnPotion() {
+    // One mystery-potion design; its result is rolled only when the player collects it.
+    if (!running || instructionsOpen || potions.length >= 1) return;
+    const potion = makeFallingItem({
+      emoji: "🧪", className: "potion mystery-potion",
+      speed: 108 + Math.random() * 28, kind: "potion"
+    });
+    potions.push(potion);
+  }
+
+  function spawnRareSword() {
+    // ⚔️ loot is deliberately rare and is never a damaging hazard.
+    if (!running || instructionsOpen || swordDrops.length >= 1) return;
+    const sword = makeFallingItem({
+      emoji: "⚔️", className: "rare-sword", speed: 100 + Math.random() * 25,
+      kind: "swordPickup", width: 36, height: 38
+    });
+    swordDrops.push(sword);
+  }
+
+  function getPlayerRect() {
+    const top = game.clientHeight - PLAYER_BOTTOM_GAP - player.offsetHeight;
+    return { left: x + 5, right: x + player.offsetWidth - 4, top: top + 4, bottom: top + player.offsetHeight - 3 };
+  }
+
+  function overlapsPlayer(item) {
+    const p = getPlayerRect();
+    return item.x + item.width - 5 > p.left && item.x + 5 < p.right &&
+      item.y + item.height - 5 > p.top && item.y + 5 < p.bottom;
+  }
+
+  function removeItem(array, index) {
+    array[index].el.remove();
+    array.splice(index, 1);
+  }
+
+  function flashGame() {
+    game.classList.remove("hit-flash");
+    void game.offsetWidth;
+    game.classList.add("hit-flash");
+  }
+
+  function applyDamage(amount, source, bypassInvulnerability = false) {
+    if (!running) return;
+    const now = performance.now();
+    if (!bypassInvulnerability && now < invulnerableUntil) return;
+
+    let remaining = amount;
+    const goldLost = Math.min(goldHearts, remaining);
+    goldHearts -= goldLost;
+    remaining -= goldLost;
+    hearts = Math.max(0, hearts - remaining);
+    invulnerableUntil = now + 850;
+    updateHUD();
+    flashGame();
+
+    if (source === "potion") playSound("potionDamage");
+    else if (source === "axe") playSound("axe");
+    else if (source === "sword") playSound("swordHit");
+    else playSound("knife");
+
+    if (source === "potion") {
+      message.textContent = "MYSTERY POTION! INSTANT DAMAGE: −3 HEARTS! 🧪";
+      showToast("MYSTERY POTION: −3 HEARTS! 💥", "bad");
+    } else if (source === "axe") {
+      message.textContent = "AXE HIT! −2 HEARTS! 🪓";
+    } else if (source === "sword") {
+      message.textContent = "ENEMY SWORD HIT! −1 HEART! 🗡️";
+    } else {
+      message.textContent = "KNIFE HIT! −1 HEART! 🔪";
+    }
+
+    if (hearts <= 0) endGame();
+  }
+
+  function handleBladeHit(blade) {
+    if (performance.now() < invulnerableUntil) return;
+    applyDamage(blade.damage, blade.type);
+  }
+
+  function handleFoodPickup(item) {
+    if (item.kind === "goldenApple") {
+      goldHearts = MAX_GOLD_HEARTS;
+      hunger = Math.min(MAX_HUNGER, hunger + item.restore);
+      updateHUD();
+      score += 5;
+      updateScore();
+      playSound("golden");
+      message.textContent = "GOLDEN APPLE! +2 GOLD HEARTS! 💛";
+      showToast("✨ GOLDEN APPLE! +2 GOLD HEARTS! ✨", "legendary");
+      return;
+    }
+
+    const before = hunger;
+    hunger = Math.min(MAX_HUNGER, hunger + item.restore);
+    score += 2;
+    updateHUD();
+    updateScore();
+    playSound("food");
+    const gained = hunger - before;
+    const isApple = item.kind === "apple";
+    const foodName = isApple ? "APPLE" : "CUTE MANGO";
+    const icon = isApple ? "🍎" : "🥭";
+    message.textContent = gained ? `${foodName}! +${gained} HUNGER ${icon}` : `${foodName} BONUS! +2 SCORE ${icon}`;
+    showToast(gained ? `${icon} ${foodName} POWER! +${gained} HUNGER` : `${icon} FOOD BONUS! +2 SCORE`, "good");
+  }
+
+  function grantObliterator() {
+    // Only the separate, rare ⚔️ pickup grants the sword. Potions never do.
+    // Every sword pickup grants it; collecting another refreshes durability to 5.
+    hasSword = true;
+    swordDurability = SWORD_MAX_DURABILITY;
+    syncSwordUI();
+    playSound("swordGet");
+    message.textContent = "YOU HAVE THE OBLITERATOR! ⚔️";
+    showToast("⚔️ RARE DROP! YOU GOT THE OBLITERATOR! · 5 USES", "legendary");
+  }
+
+  function handlePotionPickup() {
+    // Each identical-looking potion has an even 50/50 chance of either outcome.
+    // The sword is never a potion outcome; it only comes from the separate rare drop.
+    if (Math.random() < 0.5) {
+      const before = hearts;
+      hearts = Math.min(MAX_HEARTS, hearts + 3);
+      const gained = hearts - before;
+      updateHUD();
+      playSound("potionHeal");
+      if (gained > 0) {
+        message.textContent = `MYSTERY POTION! +${gained} HEART${gained === 1 ? "" : "S"}! 💖`;
+        showToast(`🧪 GOOD EFFECT! +${gained} HEART${gained === 1 ? "" : "S"}! 💖`, "good");
+      } else {
+        message.textContent = "MYSTERY POTION! YOUR HEARTS ARE ALREADY FULL! 💖";
+        showToast("🧪 GOOD EFFECT! YOUR HEALTH IS FULL! 💖", "good");
+      }
+    } else {
+      applyDamage(3, "potion", true);
+    }
+  }
+
+  function spawnSlashRing(centerX, centerY) {
+    const ring = document.createElement("div");
+    ring.className = "slash-ring";
+    ring.style.left = `${centerX}px`;
+    ring.style.top = `${centerY}px`;
+    ring.style.transform = "translate(-50%,-50%)";
+    game.appendChild(ring);
+    setTimeout(() => ring.remove(), 400);
+  }
+
+  function spawnChopBurst(item) {
+    const burst = document.createElement("div");
+    burst.className = "chop-burst";
+    burst.textContent = "💥";
+    burst.style.left = `${item.x}px`;
+    burst.style.top = `${item.y}px`;
+    game.appendChild(burst);
+    setTimeout(() => burst.remove(), 380);
+
+    for (let i = 0; i < 3; i++) {
+      const spark = document.createElement("span");
+      spark.className = "spark";
+      spark.textContent = i === 1 ? "✦" : "✧";
+      spark.style.left = `${item.x + 12}px`;
+      spark.style.top = `${item.y + 10}px`;
+      spark.style.setProperty("--dx", `${(Math.random() - .5) * 55}px`);
+      spark.style.setProperty("--dy", `${(Math.random() - .5) * 55}px`);
+      game.appendChild(spark);
+      setTimeout(() => spark.remove(), 420);
+    }
+  }
+
+  function useObliterator() {
+    if (!running || !hasSword || swordDurability <= 0) return;
+    const now = performance.now();
+    if (now - lastSlashAt < 260) return;
+    lastSlashAt = now;
+
+    const p = getPlayerRect();
+    const px = (p.left + p.right) / 2;
+    const py = (p.top + p.bottom) / 2;
+    const centerX = x + player.offsetWidth / 2;
+    const centerY = game.clientHeight - PLAYER_BOTTOM_GAP - player.offsetHeight / 2;
+    spawnSlashRing(centerX, centerY - 14);
+    playSound("slash");
+
+    let chopped = 0;
+    for (let i = blades.length - 1; i >= 0; i--) {
+      const hazard = blades[i];
+      const hx = hazard.x + hazard.width / 2;
+      const hy = hazard.y + hazard.height / 2;
+      if ((hazard.type === "axe" || hazard.type === "sword") && Math.hypot(hx - px, hy - py) <= SLASH_RANGE) {
+        blades.splice(i, 1);
+        spawnChopBurst(hazard);
+        hazard.el.remove();
+        chopped++;
+      }
+    }
+
+    swordDurability--;
+    syncSwordUI();
+
+    if (chopped > 0) {
+      score += chopped * 10;
+      updateScore();
+      playSound("chop");
+      message.textContent = `OBLITERATOR! CHOPPED ${chopped} BLADE${chopped === 1 ? "" : "S"}! +${chopped * 10} POINTS ⚔️`;
+      showToast(`⚔️ ${chopped} CHOPPED! +${chopped * 10} POINTS`, "good");
+    } else {
+      message.textContent = "WHOOSH! NO AXES OR SWORDS IN RANGE. ⚔️";
+      showToast("SWISH! NO AXES OR SWORDS IN RANGE", "good");
+    }
+
+    if (swordDurability <= 0) {
+      hasSword = false;
+      syncSwordUI();
+      player.classList.remove("has-sword");
+      playSound("break");
+      message.textContent = chopped > 0 ? `SWORD BROKE! +${chopped * 10} POINTS EARNED!` : "THE OBLITERATOR BROKE! 💔";
+      showToast("💔 THE OBLITERATOR BROKE AFTER 5 USES!", "bad");
+    }
+  }
+
+  function resetGame() {
+    clearTimers();
+    if (frame) cancelAnimationFrame(frame);
+    clearFallingItems();
+
+    x = (game.clientWidth - player.offsetWidth) / 2;
+    score = 0;
+    hearts = MAX_HEARTS;
+    goldHearts = 0;
+    hunger = MAX_HUNGER;
+    running = true;
+    instructionsOpen = false;
+    instructionsModal.classList.remove("open");
+    instructionsModal.setAttribute("aria-hidden", "true");
+    keys = {};
+    lastFrame = 0;
+    hungerDrainTimer = 0;
+    invulnerableUntil = 0;
+    lastSlashAt = 0;
+    hasSword = false;
+    swordDurability = 0;
+
+    playerCharacter.textContent = "🥷";
+    swordInHand.style.display = "";
+    player.classList.remove("has-sword");
+    player.style.left = `${x}px`;
+    scoreText.textContent = "00";
+    updateHUD();
+    syncSwordUI();
+    message.textContent = "SURVIVE, VICTIM!! 😈";
+    startBtn.textContent = "RESTART GAME";
+    overlay.classList.add("hidden");
+
+    // Hazards start quickly; normal apples/mangoes: ~10/20 sec; golden apples: ~2/20 sec; the rare Obliterator drop appears once every 20 seconds.
+    bladeTimer = setInterval(spawnBlade, 680);
+    foodTimer = setInterval(spawnNormalFood, 2000);
+    goldenAppleTimer = setInterval(spawnGoldenApple, 10000);
+    potionTimer = setInterval(spawnPotion, 10000);
+    swordTimer = setInterval(spawnRareSword, 20000);
+    frame = requestAnimationFrame(loop);
+  }
+
+  function endGame() {
+    if (!running) return;
+    running = false;
+    clearTimers();
+    if (frame) cancelAnimationFrame(frame);
+    keys = {};
+    player.classList.remove("has-sword");
+    slashBtn.disabled = true;
+    message.textContent = `YOU GOT CHOPPED! Final score: ${score}`;
+    overlayTitle.textContent = "YOU GOT CHOPPED! 💀";
+    overlayText.textContent = `You survived with ${score} points. Collect mangoes and apples, watch for the mystery potion, and look for the rare safe ⚔️ sword drop!`;
+    overlay.classList.remove("hidden");
+    startBtn.textContent = "TRY AGAIN";
+    playSound("gameover");
+  }
+
+  function loop(timestamp) {
+    if (!running) return;
+    const now = timestamp || performance.now();
+    if (instructionsOpen) {
+      lastFrame = now;
+      frame = requestAnimationFrame(loop);
+      return;
+    }
+    const delta = lastFrame ? Math.min((now - lastFrame) / 1000, .045) : .016;
+    lastFrame = now;
+
+    const left = keys.ArrowLeft || keys.a;
+    const right = keys.ArrowRight || keys.d;
+    const direction = (right ? 1 : 0) - (left ? 1 : 0);
+
+    if (direction !== 0) {
+      x += direction * (hunger > 0 ? 260 : 145) * delta;
+      if (hunger > 0) {
+        hungerDrainTimer += delta;
+        if (hungerDrainTimer >= HUNGER_DRAIN_SECONDS) {
+          const points = Math.floor(hungerDrainTimer / HUNGER_DRAIN_SECONDS);
+          hunger = Math.max(0, hunger - points);
+          hungerDrainTimer %= HUNGER_DRAIN_SECONDS;
+          updateHUD();
+          if (hunger === 0) {
+            hungerDrainTimer = 0;
+            message.textContent = "HUNGER EMPTY! FIND A MANGO! YOU'RE SLOW! 🥭";
+          }
+        }
+      }
+    }
+
+    x = Math.max(0, Math.min(game.clientWidth - player.offsetWidth, x));
+    player.style.left = `${x}px`;
+    game.classList.toggle("invulnerable", now < invulnerableUntil);
+
+    for (let i = blades.length - 1; i >= 0; i--) {
+      const blade = blades[i];
+      blade.y += blade.speed * delta;
+      blade.el.style.top = `${blade.y}px`;
+      if (overlapsPlayer(blade)) {
+        removeItem(blades, i);
+        handleBladeHit(blade);
+        if (!running) return;
+        continue;
+      }
+      if (blade.y > game.clientHeight) {
+        removeItem(blades, i);
+        score += 1;
+        updateScore();
+      }
+    }
+
+    for (let i = foods.length - 1; i >= 0; i--) {
+      const food = foods[i];
+      food.y += food.speed * delta;
+      food.el.style.top = `${food.y}px`;
+      if (overlapsPlayer(food)) {
+        removeItem(foods, i);
+        handleFoodPickup(food);
+        continue;
+      }
+      if (food.y > game.clientHeight) removeItem(foods, i);
+    }
+
+    for (let i = potions.length - 1; i >= 0; i--) {
+      const potion = potions[i];
+      potion.y += potion.speed * delta;
+      potion.el.style.top = `${potion.y}px`;
+      if (overlapsPlayer(potion)) {
+        removeItem(potions, i);
+        handlePotionPickup();
+        if (!running) return;
+        continue;
+      }
+      if (potion.y > game.clientHeight) removeItem(potions, i);
+    }
+
+    // Separate rare crossed-swords item: it equips/refills the Obliterator and never hurts.
+    for (let i = swordDrops.length - 1; i >= 0; i--) {
+      const sword = swordDrops[i];
+      sword.y += sword.speed * delta;
+      sword.el.style.top = `${sword.y}px`;
+      if (overlapsPlayer(sword)) {
+        removeItem(swordDrops, i);
+        grantObliterator("pickup");
+        continue;
+      }
+      if (sword.y > game.clientHeight) removeItem(swordDrops, i);
+    }
+
+    frame = requestAnimationFrame(loop);
+  }
+
+  startBtn.addEventListener("click", () => {
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!audioContext && AudioCtor) {
+      try { audioContext = new AudioCtor(); } catch (error) { audioContext = null; }
+    }
+    resetGame();
+    playSound("start");
+  });
+
+  soundBtn.addEventListener("click", () => {
+    soundOn = !soundOn;
+    soundBtn.textContent = soundOn ? "🔊 SOUND ON" : "🔇 SOUND OFF";
+    soundBtn.setAttribute("aria-pressed", String(soundOn));
+    if (soundOn) playSound("button");
+  });
+
+  function openInstructions() {
+    lastFocusedElement = document.activeElement;
+    instructionsOpen = true;
+    keys = {};
+    instructionsModal.classList.add("open");
+    instructionsModal.setAttribute("aria-hidden", "false");
+    closeInstructionsBtn.focus();
+  }
+
+  function closeInstructions() {
+    instructionsOpen = false;
+    instructionsModal.classList.remove("open");
+    instructionsModal.setAttribute("aria-hidden", "true");
+    if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+      lastFocusedElement.focus();
+    }
+  }
+
+  instructionsBtn.addEventListener("click", openInstructions);
+  closeInstructionsBtn.addEventListener("click", closeInstructions);
+  instructionsModal.addEventListener("click", event => {
+    if (event.target === instructionsModal) closeInstructions();
+  });
+
+  slashBtn.addEventListener("click", useObliterator);
+
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && instructionsOpen) {
+      event.preventDefault();
+      closeInstructions();
+      return;
+    }
+    if (["ArrowLeft", "ArrowRight", " "].includes(event.key)) event.preventDefault();
+    if (event.code === "ControlRight") {
+      event.preventDefault();
+      if (!event.repeat) useObliterator();
+      return;
+    }
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") keys[event.key] = true;
+    else keys[event.key.toLowerCase()] = true;
+  });
+
+  document.addEventListener("keyup", event => {
+    if (event.code === "ControlRight") return;
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") keys[event.key] = false;
+    else keys[event.key.toLowerCase()] = false;
+  });
+
+  window.addEventListener("blur", () => { keys = {}; });
+
+  function holdButton(id, key) {
+    const button = document.getElementById(id);
+    button.addEventListener("pointerdown", event => {
+      event.preventDefault();
+      keys[key] = true;
+      if (button.setPointerCapture) {
+        try { button.setPointerCapture(event.pointerId); } catch (error) { /* Optional browser feature. */ }
+      }
+    });
+    const release = () => { keys[key] = false; };
+    ["pointerup", "pointercancel", "lostpointercapture", "pointerleave"].forEach(type => button.addEventListener(type, release));
+    button.addEventListener("contextmenu", event => event.preventDefault());
+  }
+
+  holdButton("leftBtn", "ArrowLeft");
+  holdButton("rightBtn", "ArrowRight");
+  updateHUD();
+  syncSwordUI();
+})();
+</script>
+</body>
+</html>
